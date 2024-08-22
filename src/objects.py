@@ -75,6 +75,15 @@ class Team:
         self.weapons = []
         self.armors = []
 
+
+class Task:
+    def __init__(self, id, description, reward, team_id):
+        self.id = id
+        self.description = description
+        self.reward = reward
+        self.team_id = team_id
+
+
 class Mine:
     def __init__(self):
         self.slaves = []

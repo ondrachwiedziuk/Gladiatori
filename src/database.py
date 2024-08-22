@@ -1,5 +1,6 @@
 import mariadb
 import objects
+from random import randint
 from time import time
 
 class Database:
@@ -27,16 +28,18 @@ class Database:
         self.connection.close()
 
     def create_tables(self):
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS gladiators (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255), health INT, defense INT, attack INT, price INT, level INT, experience INT, special_ability VARCHAR(255), picture_path VARCHAR(255), head_id INT, chest_id INT, legs_id INT, right_hand_id INT, left_hand_id INT, status VARCHAR(255), team_id INT)")
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS weapons (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255), damage INT, price INT, head_bonus INT, chest_bonus INT, legs_bonus INT, animal_bonus INT, special_ability VARCHAR(255), picture_path VARCHAR(255))")
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS armors (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255), kind VARCHAR(255), defense INT, price INT, special_ability VARCHAR(255), picture_path VARCHAR(255))")
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS gladiators (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255), health INT, defense INT, attack INT, price INT, currency VARCHAR(255), special_ability VARCHAR(255), picture_path VARCHAR(255), head_id INT, chest_id INT, legs_id INT, right_hand_id INT, left_hand_id INT, status VARCHAR(255), team_id INT)")
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS weapons (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255), damage INT, price INT, currency VARCHAR(255), head_bonus INT, chest_bonus INT, legs_bonus INT, animal_bonus INT, special_ability VARCHAR(255), picture_path VARCHAR(255))")
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS armors (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255), kind VARCHAR(255), defense INT, price INT, currency VARCHAR(255), special_ability VARCHAR(255), picture_path VARCHAR(255))")
         self.cursor.execute("CREATE TABLE IF NOT EXISTS teams (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255), golden_coins INT, silver_coins INT, bronze_coins INT)")
         self.cursor.execute("CREATE TABLE IF NOT EXISTS game (id INT PRIMARY KEY AUTO_INCREMENT, start_time INT, end_time INT, status VARCHAR(255))")
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS tasks (id INT PRIMARY KEY AUTO_INCREMENT, description VARCHAR(255), reward INT, team_id INT)")
 
     def add_gladiator(self, gladiator):
         # insert gladiator into table
-        self.cursor.execute("""INSERT INTO gladiators (name, health, defense, attack, price, level, experience, special_ability, picture_path, head_id, chest_id, legs_id, right_hand_id, left_hand_id, status, team_id) VALUES (?,
-                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (gladiator.name, gladiator.health, gladiator.defense, gladiator.attack, gladiator.price, gladiator.level, gladiator.experience, gladiator.special_ability, gladiator.picture_path, gladiator.head, gladiator.chest, gladiator.legs, gladiator.right_hand, gladiator.left_hand, gladiator.status, gladiator.team_id))
+        self.cursor.execute("""INSERT INTO gladiators (name, health, defense, attack, price, currency, special_ability, picture_path, head_id, chest_id, legs_id, right_hand_id, left_hand_id, status, team_id) VALUES
+                            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                            (gladiator.name, gladiator.health, gladiator.defense, gladiator.attack, gladiator.price, gladiator.currency, gladiator.special_ability, gladiator.picture_path, gladiator.head, gladiator.chest, gladiator.legs, gladiator.right_hand, gladiator.left_hand, gladiator.status, gladiator.team_id))
 
         self.connection.commit()
     
@@ -135,6 +138,34 @@ class Database:
         self.cursor.execute("UPDATE game SET end_time = end_time + ? WHERE id = (SELECT MAX(id) FROM game)", (seconds,))
         self.connection.commit()
 
+    def assign_task(self, team_id):
+        self.cursor.execute("SELECT * FROM tasks WHERE team_id IS NULL")
+        result = self.cursor.fetchall()
+        if len(result) == 0:
+            return None
+        task = objects.Task(*result[randint(0, len(result) - 1)])
+        self.cursor.execute("UPDATE tasks SET team_id = ? WHERE id = ?", (team_id, task.id))
+        self.connection.commit()
+        return task
+    
+    def complete_task(self, task_id, reward=True):
+        self.cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+        task = objects.Task(*self.cursor.fetchone())
+        if reward:
+            self.cursor.execute("UPDATE teams SET bronze_coins = bronze_coins + ? WHERE id = ?", (task.reward, task.team_id))
+        self.cursor.execute("UPDATE tasks SET team_id = NULL WHERE id = ?", (task_id,))
+        self.connection.commit()
+        return None
+
+    def get_tasks(self, team_id):
+        self.cursor.execute("SELECT * FROM tasks WHERE team_id = ?", (team_id,))
+        result = self.cursor.fetchall()
+        return [objects.Task(*x) for x in result]
+    
+    def add_task(self, task):
+        self.cursor.execute("INSERT INTO tasks (description, reward, team_id) VALUES (?, ?, ?)", (task.description, task.reward, task.team_id))
+        self.connection.commit()
+
     def drop_database(self):
         self.cursor.execute("DROP DATABASE gladiatori")
         self.connection.commit()
@@ -150,14 +181,24 @@ class Database:
 def main():
     db = Database("gladiatori_admin", "VodazDunaje", "localhost", 3306, "gladiatori")
     db.connect()
-    # db.create_tables()
+    db.create_tables()
+    db.add_task(objects.Task(0, "Složte Rubikovu kostku 2x2", 10, None))
+    db.add_task(objects.Task(0, "Běžte ke stanovišti 1", 10, None))
+    db.add_task(objects.Task(0, "Složte origami lodi", 10, None))
+    db.add_task(objects.Task(0, "Složte Lloydovu 15", 10, None))
+    db.add_task(objects.Task(0, "Složte Rubikovu kostku 3x3", 25, None))
+    db.add_task(objects.Task(0, "Složte origami jeřába", 25, None))
+    db.add_task(objects.Task(0, "Běžte ke stanovišti 2", 25, None))
+    db.add_task(objects.Task(0, "Složka Rubik's slide", 50, None))
+    db.add_task(objects.Task(0, "Složte origami draka", 50, None))
+    db.add_task(objects.Task(0, "Běžte ke stanovišti 3", 50, None))
     # db.create_team("RED")
     # db.add_gladiator(gladiator)
     # gladiator = db.get_gladiator(1)
     # db.remove_gladiator(gladiator)
     # gladiator = objects.Gladiator(0, "servus Testovni", 100, 10, 10, 100, 1, 0, "Testovni specialni schopnost", "testovni.png")
     # db.add_gladiator(gladiator)
-    db.add_bronze_coins(1, 100)
+    # db.add_bronze_coins(1, 100)
     db.disconnect()
 
 if __name__ == "__main__":

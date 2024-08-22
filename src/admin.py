@@ -3,8 +3,14 @@ from guistr import Menu, Button, loop, RESOlUTION, SIZE_BUTTON
 from database import Database
 
 
+def admin_login():
+    db = Database("gladiatori_admin", "VodazDunaje", "localhost", 3306, "gladiatori")
+    db.connect()
+    return db
+
+
 def admin_menu(screen, status_bar):
-    menu = Menu(screen, status_bar, "Admin")
+    menu = Menu(screen, status_bar, admin_menu, "Admin")
     # Two columns
     run_button = Button("Spustit hru", (RESOlUTION[0] // 4 - SIZE_BUTTON[0] // 2, 200), SIZE_BUTTON, start_game)
     menu.add_button(run_button)
@@ -20,7 +26,7 @@ def admin_menu(screen, status_bar):
     escape_button = Button("Útěk gladiátorů", (RESOlUTION[0] // 4 - SIZE_BUTTON[0] // 2, 400), SIZE_BUTTON, None) # TODO: Add action
     menu.add_button(escape_button)
     # Inflation
-    inflation_button = Button("INFLACE", (3 * RESOlUTION[0] // 4 - SIZE_BUTTON[0] // 2, 400), SIZE_BUTTON, None) # TODO: Add action
+    inflation_button = Button("Inflace", (3 * RESOlUTION[0] // 4 - SIZE_BUTTON[0] // 2, 400), SIZE_BUTTON, None) # TODO: Add action
     menu.add_button(inflation_button)
 
     exit_button = Button("Zpět", (RESOlUTION[0] // 2 - SIZE_BUTTON[0] // 2, 500), SIZE_BUTTON, start_menu)
@@ -29,8 +35,7 @@ def admin_menu(screen, status_bar):
 
 
 def start_game(screen, status_bar):
-    db = Database("gladiatori_admin", "VodazDunaje", "localhost", 3306, "gladiatori")
-    db.connect()
+    db = admin_login()
     db.start_game()
     db.disconnect()
     status_bar.status = 'R'
@@ -38,8 +43,7 @@ def start_game(screen, status_bar):
 
 
 def stop_game(screen, status_bar):
-    db = Database("gladiatori_admin", "VodazDunaje", "localhost", 3306, "gladiatori")
-    db.connect()
+    db = admin_login()
     db.stop_game()
     db.disconnect()
     status_bar.status = 'E'
@@ -47,8 +51,7 @@ def stop_game(screen, status_bar):
 
 
 def add_time(screen, status_bar):
-    db = Database("gladiatori_admin", "VodazDunaje", "localhost", 3306, "gladiatori")
-    db.connect()
+    db = admin_login()
     # Add 15 minutes
     db.add_time(15 * 60)
     db.disconnect()
@@ -56,8 +59,7 @@ def add_time(screen, status_bar):
 
 
 def remove_time(screen, status_bar):
-    db = Database("gladiatori_admin", "VodazDunaje", "localhost", 3306, "gladiatori")
-    db.connect()
+    db = admin_login()
     # Remove 15 minutes
     db.add_time(-15 * 60)
     db.disconnect()
@@ -65,7 +67,7 @@ def remove_time(screen, status_bar):
 
 
 def arena_menu(screen, status_bar):
-    menu = Menu(screen, status_bar, "Aréna")
+    menu = Menu(screen, status_bar, arena_menu, "Aréna")
     # Two columns
     first_team_button = Button("První tým", (RESOlUTION[0] // 4 - SIZE_BUTTON[0] // 2, 200), SIZE_BUTTON, None) # TODO: Add action
     menu.add_button(first_team_button)
@@ -79,7 +81,7 @@ def arena_menu(screen, status_bar):
 
 
 def aukce_menu(screen, status_bar):
-    menu = Menu(screen, status_bar, "Aukce")
+    menu = Menu(screen, status_bar, aukce_menu, "Aukce")
     select_button = Button("Vybrat", (RESOlUTION[0] // 2 - SIZE_BUTTON[0] // 2, 200), SIZE_BUTTON, None) # TODO: Add action
     menu.add_button(select_button)
     sell_button = Button("Prodat", (RESOlUTION[0] // 2 - SIZE_BUTTON[0] // 2, 300), SIZE_BUTTON, None) # TODO: Add action
@@ -95,7 +97,7 @@ def exit_menu():
 
 def start_menu(screen, status_bar):
     pygame.display.set_caption("Gladiátorská aréna")
-    menu = Menu(screen, status_bar)
+    menu = Menu(screen, status_bar, start_menu)
     # Center buttons
     new_game_button = Button("Admin", (RESOlUTION[0] // 2 - SIZE_BUTTON[0] // 2, 200), SIZE_BUTTON, admin_menu)
     load_game_button = Button("Aréna", (RESOlUTION[0] // 2 - SIZE_BUTTON[0] // 2, 300), SIZE_BUTTON, arena_menu)
